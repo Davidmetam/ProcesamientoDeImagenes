@@ -17,6 +17,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 import java.io.IOException;
 
+@SuppressWarnings("all")
 public class Visualizador extends JFrame {
     private JLabel etiquetaImagen;
     private BufferedImage imagenActual;
@@ -26,6 +27,7 @@ public class Visualizador extends JFrame {
         setTitle("Visualizador de Imagenes PCI");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1000, 700);
+        setMinimumSize(new Dimension(400, 300));
         setLayout(new BorderLayout());
 
         etiquetaImagen = new JLabel();
@@ -44,7 +46,6 @@ public class Visualizador extends JFrame {
         botonCargar.addActionListener(e -> cargarImagenDesdeArchivo());
         panelInferior.add(botonCargar);
         add(panelInferior, BorderLayout.SOUTH);
-
         setLocationRelativeTo(null);
         setVisible(true);
     }
@@ -60,6 +61,10 @@ public class Visualizador extends JFrame {
             try {
                 imagenActual = ImageIO.read(archivo);
                 etiquetaImagen.setIcon(new ImageIcon(imagenActual));
+                etiquetaImagen.setPreferredSize(new Dimension(imagenActual.getWidth(), imagenActual.getHeight()));
+                etiquetaImagen.revalidate();
+                pack();
+                setLocationRelativeTo(null);
             } catch (IOException e) {
                 System.err.println("Error al cargar la imagen");
             }
