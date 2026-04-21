@@ -23,6 +23,9 @@ public class Visualizador extends JFrame {
     private BufferedImage imagenActual;
     private JPanel panelHerramientas;
     private JButton escalaDeGrisesButton;
+    private JButton negativeButton;
+    private BufferedImage imagenOriginal;
+    private JButton originalButton;
 
     public Visualizador() {
         setTitle("Visualizador de Imagenes PCI");
@@ -44,7 +47,18 @@ public class Visualizador extends JFrame {
         escalaDeGrisesButton = new JButton("Escala de Grises");
         escalaDeGrisesButton.addActionListener(e -> setEscalaDeGrises());
 
+        negativeButton = new JButton("Negativo");
+        negativeButton.addActionListener(e -> setNegativo());
+
+        originalButton = new JButton("Color original");
+        originalButton.addActionListener( e -> {
+            imagenActual = imagenOriginal;
+            actualizarPantalla();
+        });
+
+        panelHerramientas.add(originalButton);
         panelHerramientas.add(escalaDeGrisesButton);
+        panelHerramientas.add(negativeButton);
         add(panelHerramientas, BorderLayout.EAST);
 
         JPanel panelInferior = new JPanel();
@@ -56,6 +70,7 @@ public class Visualizador extends JFrame {
         setVisible(true);
     }
 
+
     private void cargarImagenDesdeArchivo() {
         JFileChooser selector = new JFileChooser();
         FileNameExtensionFilter filtro = new FileNameExtensionFilter("Imagenes", "jpg", "png", "jpeg", "bmp");
@@ -66,6 +81,7 @@ public class Visualizador extends JFrame {
             File archivo = selector.getSelectedFile();
             try {
                 imagenActual = ImageIO.read(archivo);
+                imagenOriginal = imagenActual;
                 actualizarPantalla();
                 pack();
                 setLocationRelativeTo(null);
@@ -73,6 +89,30 @@ public class Visualizador extends JFrame {
                 System.err.println("Error al cargar la imagen");
             }
         }
+    }
+
+    private void setNegativo() {
+        if (imagenActual == null) return;
+
+        int ancho = imagenActual.getWidth();
+        int alto = imagenActual.getHeight();
+        BufferedImage nueva = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
+
+        for (int x = 0; x < ancho; x++) {
+            for (int y = 0; y < alto; y++) {
+                Color pixel = new Color(imagenActual.getRGB(x, y));
+
+                int r = 255 - pixel.getRed();
+                int g = 255 - pixel.getGreen();
+                int b = 255 - pixel.getBlue();
+
+                Color nuevoColor = new Color(r, g, b);
+                nueva.setRGB(x, y, nuevoColor.getRGB());
+            }
+        }
+
+        imagenActual = nueva;
+        actualizarPantalla();
     }
 
     private void setEscalaDeGrises() {
