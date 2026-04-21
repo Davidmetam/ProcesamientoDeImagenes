@@ -22,6 +22,7 @@ public class Visualizador extends JFrame {
     private JLabel etiquetaImagen;
     private BufferedImage imagenActual;
     private JPanel panelHerramientas;
+    private JButton escalaDeGrisesButton;
 
     public Visualizador() {
         setTitle("Visualizador de Imagenes PCI");
@@ -39,7 +40,12 @@ public class Visualizador extends JFrame {
         panelHerramientas.setPreferredSize(new Dimension(200, 0));
         panelHerramientas.setBorder(new TitledBorder("Procesamiento"));
         panelHerramientas.setBackground(Color.LIGHT_GRAY);
-        //add(panelHerramientas, BorderLayout.EAST);
+
+        escalaDeGrisesButton = new JButton("Escala de Grises");
+        escalaDeGrisesButton.addActionListener(e -> setEscalaDeGrises());
+
+        panelHerramientas.add(escalaDeGrisesButton);
+        add(panelHerramientas, BorderLayout.EAST);
 
         JPanel panelInferior = new JPanel();
         JButton botonCargar = new JButton("Cargar Imagen");
@@ -60,9 +66,7 @@ public class Visualizador extends JFrame {
             File archivo = selector.getSelectedFile();
             try {
                 imagenActual = ImageIO.read(archivo);
-                etiquetaImagen.setIcon(new ImageIcon(imagenActual));
-                etiquetaImagen.setPreferredSize(new Dimension(imagenActual.getWidth(), imagenActual.getHeight()));
-                etiquetaImagen.revalidate();
+                actualizarPantalla();
                 pack();
                 setLocationRelativeTo(null);
             } catch (IOException e) {
@@ -71,6 +75,42 @@ public class Visualizador extends JFrame {
         }
     }
 
+    private void setEscalaDeGrises() {
+        if (imagenActual == null) return;
+
+        int ancho = imagenActual.getWidth();
+        int alto = imagenActual.getHeight();
+        BufferedImage nueva = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
+
+        for (int x = 0; x < ancho; x++) {
+            for (int y = 0; y < alto; y++) {
+                Color pixel = new Color(imagenActual.getRGB(x, y));
+
+                int r = pixel.getRed();
+                int g = pixel.getGreen();
+                int b = pixel.getBlue();
+
+                int gris = (int) (0.299 * r + 0.587 * g + 0.114 * b);
+
+                Color nuevoColor = new Color(gris, gris, gris);
+                nueva.setRGB(x, y, nuevoColor.getRGB());
+            }
+        }
+
+        imagenActual = nueva;
+        actualizarPantalla();
+    }
+
+    private void actualizarPantalla() {
+        if (imagenActual != null) {
+            etiquetaImagen.setIcon(new ImageIcon(imagenActual));
+            etiquetaImagen.setPreferredSize(new Dimension(imagenActual.getWidth(), imagenActual.getHeight()));
+            etiquetaImagen.revalidate();
+            etiquetaImagen.repaint();
+        }
+    }
+
     public static void main(String[] args) {
         new Visualizador();
-    }}
+    }
+}
