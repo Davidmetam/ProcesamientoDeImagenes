@@ -21,6 +21,7 @@ public class Visualizador extends JFrame {
     private BufferedImage imagenOriginal;
     private JButton originalButton;
     private JButton umbralButton;
+    private JButton blurButton;
     private final Color colorDefecto = UIManager.getColor("Button.background");
 
     public Visualizador() {
@@ -37,7 +38,7 @@ public class Visualizador extends JFrame {
 
         panelHerramientas = new JPanel();
         panelHerramientas.setPreferredSize(new Dimension(200, 0));
-        panelHerramientas.setBorder(new EmptyBorder(5,5,5,5));
+        panelHerramientas.setBorder(new EmptyBorder(5, 5, 5, 5));
         panelHerramientas.setBackground(Color.LIGHT_GRAY);
 
         panelHerramientas.setLayout(new GridLayout(0, 1, 10, 10));
@@ -55,7 +56,7 @@ public class Visualizador extends JFrame {
         });
 
         originalButton = new JButton("Color original");
-        originalButton.addActionListener( e -> {
+        originalButton.addActionListener(e -> {
             setBackground(originalButton);
             imagenActual = imagenOriginal;
             actualizarPantalla();
@@ -64,13 +65,22 @@ public class Visualizador extends JFrame {
         umbralButton = new JButton("Umbral");
         umbralButton.addActionListener(e -> {
             setBackground(umbralButton);
+            imagenActual = imagenOriginal;
             setUmbral();
+        });
+
+        blurButton = new JButton("Blur");
+        blurButton.addActionListener(e -> {
+            setBackground(blurButton);
+            imagenActual = imagenOriginal;
+            setBlur();
         });
 
         panelHerramientas.add(originalButton);
         panelHerramientas.add(escalaDeGrisesButton);
         panelHerramientas.add(negativeButton);
         panelHerramientas.add(umbralButton);
+        panelHerramientas.add(blurButton);
         add(panelHerramientas, BorderLayout.EAST);
 
         JPanel panelInferior = new JPanel();
@@ -82,11 +92,13 @@ public class Visualizador extends JFrame {
         setVisible(true);
     }
 
-    public void setBackground(JButton button){
+
+    public void setBackground(JButton button) {
         escalaDeGrisesButton.setBackground(colorDefecto);
         umbralButton.setBackground(colorDefecto);
         negativeButton.setBackground(colorDefecto);
         originalButton.setBackground(colorDefecto);
+        blurButton.setBackground(colorDefecto);
         button.setBackground(new Color(50, 252, 82));
     }
 
@@ -136,6 +148,40 @@ public class Visualizador extends JFrame {
         actualizarPantalla();
     }
 
+    private void setBlur() {
+        if (imagenActual == null) return;
+
+        int ancho = imagenActual.getWidth();
+        int alto = imagenActual.getHeight();
+        BufferedImage resultado = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
+
+        for (int x = 1; x < ancho - 1; x++) {
+            for (int y = 1; y < alto - 1; y++) {
+                int sumaR = 0, sumaG = 0, sumaB = 0;
+
+                for (int i = -1; i <= 1; i++) {
+                    for (int j = -1; j <= 1; j++) {
+                        Color vecino = new Color(imagenActual.getRGB(x + i, y + j));
+
+                        sumaR += vecino.getRed();
+                        sumaG += vecino.getGreen();
+                        sumaB += vecino.getBlue();
+                    }
+                }
+
+                int r = sumaR / 9;
+                int g = sumaG / 9;
+                int b = sumaB / 9;
+
+                Color nuevoColor = new Color(r, g, b);
+                resultado.setRGB(x, y, nuevoColor.getRGB());
+            }
+        }
+
+        imagenActual = resultado;
+        actualizarPantalla();
+    }
+
     private void setEscalaDeGrises() {
         if (imagenActual == null) return;
         imagenActual = imagenOriginal;
@@ -179,7 +225,7 @@ public class Visualizador extends JFrame {
                 int g = pixel.getGreen();
                 int b = pixel.getBlue();
 
-                int gris = (r+g+b) < 128 ? 0 : 255;
+                int gris = (r + g + b) < 128 ? 0 : 255;
 
                 Color nuevoColor = new Color(gris, gris, gris);
                 nueva.setRGB(x, y, nuevoColor.getRGB());
