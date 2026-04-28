@@ -1,18 +1,12 @@
 package org.davidmetam.pci;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JLabel;
-import javax.swing.JButton;
-import javax.swing.ImageIcon;
-import javax.swing.JScrollPane;
-import javax.swing.JFileChooser;
+import javax.swing.*;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.border.TitledBorder;
+import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Color;
 import java.io.File;
 import javax.imageio.ImageIO;
 import java.io.IOException;
@@ -26,6 +20,8 @@ public class Visualizador extends JFrame {
     private JButton negativeButton;
     private BufferedImage imagenOriginal;
     private JButton originalButton;
+    private JButton umbralButton;
+    private final Color colorDefecto = UIManager.getColor("Button.background");
 
     public Visualizador() {
         setTitle("Visualizador de Imagenes PCI");
@@ -41,24 +37,40 @@ public class Visualizador extends JFrame {
 
         panelHerramientas = new JPanel();
         panelHerramientas.setPreferredSize(new Dimension(200, 0));
-        panelHerramientas.setBorder(new TitledBorder("Procesamiento"));
+        panelHerramientas.setBorder(new EmptyBorder(5,5,5,5));
         panelHerramientas.setBackground(Color.LIGHT_GRAY);
 
+        panelHerramientas.setLayout(new GridLayout(0, 1, 10, 10));
+
         escalaDeGrisesButton = new JButton("Escala de Grises");
-        escalaDeGrisesButton.addActionListener(e -> setEscalaDeGrises());
+        escalaDeGrisesButton.addActionListener(e -> {
+            setBackground(escalaDeGrisesButton);
+            setEscalaDeGrises();
+        });
 
         negativeButton = new JButton("Negativo");
-        negativeButton.addActionListener(e -> setNegativo());
+        negativeButton.addActionListener(e -> {
+            setBackground(negativeButton);
+            setNegativo();
+        });
 
         originalButton = new JButton("Color original");
         originalButton.addActionListener( e -> {
+            setBackground(originalButton);
             imagenActual = imagenOriginal;
             actualizarPantalla();
+        });
+
+        umbralButton = new JButton("Umbral");
+        umbralButton.addActionListener(e -> {
+            setBackground(umbralButton);
+            setUmbral();
         });
 
         panelHerramientas.add(originalButton);
         panelHerramientas.add(escalaDeGrisesButton);
         panelHerramientas.add(negativeButton);
+        panelHerramientas.add(umbralButton);
         add(panelHerramientas, BorderLayout.EAST);
 
         JPanel panelInferior = new JPanel();
@@ -70,9 +82,17 @@ public class Visualizador extends JFrame {
         setVisible(true);
     }
 
+    public void setBackground(JButton button){
+        escalaDeGrisesButton.setBackground(colorDefecto);
+        umbralButton.setBackground(colorDefecto);
+        negativeButton.setBackground(colorDefecto);
+        originalButton.setBackground(colorDefecto);
+        button.setBackground(new Color(50, 252, 82));
+    }
+
 
     private void cargarImagenDesdeArchivo() {
-        JFileChooser selector = new JFileChooser();
+        JFileChooser selector = new JFileChooser("C:\\Users\\david\\OneDrive\\Imágenes");
         FileNameExtensionFilter filtro = new FileNameExtensionFilter("Imagenes", "jpg", "png", "jpeg", "bmp");
         selector.setFileFilter(filtro);
         int resultado = selector.showOpenDialog(this);
@@ -93,6 +113,7 @@ public class Visualizador extends JFrame {
 
     private void setNegativo() {
         if (imagenActual == null) return;
+        imagenActual = imagenOriginal;
 
         int ancho = imagenActual.getWidth();
         int alto = imagenActual.getHeight();
@@ -117,6 +138,7 @@ public class Visualizador extends JFrame {
 
     private void setEscalaDeGrises() {
         if (imagenActual == null) return;
+        imagenActual = imagenOriginal;
 
         int ancho = imagenActual.getWidth();
         int alto = imagenActual.getHeight();
@@ -131,6 +153,33 @@ public class Visualizador extends JFrame {
                 int b = pixel.getBlue();
 
                 int gris = (int) (0.299 * r + 0.587 * g + 0.114 * b);
+
+                Color nuevoColor = new Color(gris, gris, gris);
+                nueva.setRGB(x, y, nuevoColor.getRGB());
+            }
+        }
+
+        imagenActual = nueva;
+        actualizarPantalla();
+    }
+
+    private void setUmbral() {
+        if (imagenActual == null) return;
+        imagenActual = imagenOriginal;
+
+        int ancho = imagenActual.getWidth();
+        int alto = imagenActual.getHeight();
+        BufferedImage nueva = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
+
+        for (int x = 0; x < ancho; x++) {
+            for (int y = 0; y < alto; y++) {
+                Color pixel = new Color(imagenActual.getRGB(x, y));
+
+                int r = pixel.getRed();
+                int g = pixel.getGreen();
+                int b = pixel.getBlue();
+
+                int gris = (r+g+b) < 128 ? 0 : 255;
 
                 Color nuevoColor = new Color(gris, gris, gris);
                 nueva.setRGB(x, y, nuevoColor.getRGB());
