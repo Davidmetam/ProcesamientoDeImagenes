@@ -1,10 +1,8 @@
 package org.davidmetam.pci;
 
 import javax.swing.*;
-import javax.swing.border.BevelBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -22,6 +20,7 @@ public class Visualizador extends JFrame {
     private JButton originalButton;
     private JButton umbralButton;
     private JButton blurButton;
+    private JButton sharpenButton;
     private final Color colorDefecto = UIManager.getColor("Button.background");
 
     public Visualizador() {
@@ -76,11 +75,19 @@ public class Visualizador extends JFrame {
             setBlur();
         });
 
+        sharpenButton = new JButton("Sharpen");
+        sharpenButton.addActionListener(e -> {
+            setBackground(sharpenButton);
+            imagenActual = imagenOriginal;
+            setSharpen();
+        });
+
         panelHerramientas.add(originalButton);
         panelHerramientas.add(escalaDeGrisesButton);
         panelHerramientas.add(negativeButton);
         panelHerramientas.add(umbralButton);
         panelHerramientas.add(blurButton);
+        panelHerramientas.add(sharpenButton);
         add(panelHerramientas, BorderLayout.EAST);
 
         JPanel panelInferior = new JPanel();
@@ -93,12 +100,14 @@ public class Visualizador extends JFrame {
     }
 
 
+
     public void setBackground(JButton button) {
         escalaDeGrisesButton.setBackground(colorDefecto);
         umbralButton.setBackground(colorDefecto);
         negativeButton.setBackground(colorDefecto);
         originalButton.setBackground(colorDefecto);
         blurButton.setBackground(colorDefecto);
+        sharpenButton.setBackground(colorDefecto);
         button.setBackground(new Color(50, 252, 82));
     }
 
@@ -150,7 +159,6 @@ public class Visualizador extends JFrame {
 
     private void setBlur() {
         if (imagenActual == null) return;
-
         int ancho = imagenActual.getWidth();
         int alto = imagenActual.getHeight();
         BufferedImage resultado = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
@@ -158,7 +166,6 @@ public class Visualizador extends JFrame {
         for (int x = 1; x < ancho - 1; x++) {
             for (int y = 1; y < alto - 1; y++) {
                 int sumaR = 0, sumaG = 0, sumaB = 0;
-
                 for (int i = -1; i <= 1; i++) {
                     for (int j = -1; j <= 1; j++) {
                         Color vecino = new Color(imagenActual.getRGB(x + i, y + j));
@@ -168,16 +175,45 @@ public class Visualizador extends JFrame {
                         sumaB += vecino.getBlue();
                     }
                 }
-
                 int r = sumaR / 9;
                 int g = sumaG / 9;
                 int b = sumaB / 9;
+                Color nuevoColor = new Color(r, g, b);
+                resultado.setRGB(x, y, nuevoColor.getRGB());
+            }
+        }
+        imagenActual = resultado;
+        actualizarPantalla();
+    }
+
+    private void setSharpen() {
+        if (imagenActual == null) return;
+        int ancho = imagenActual.getWidth();
+        int alto = imagenActual.getHeight();
+        BufferedImage resultado = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
+
+        for (int x = 1; x < ancho - 1; x++) {
+            for (int y = 1; y < alto - 1; y++) {
+                int sumaR = 0, sumaG = 0, sumaB = 0;
+
+                Color c01 = new Color(imagenActual.getRGB(x, y - 1));
+                Color c10 = new Color(imagenActual.getRGB(x - 1, y));
+                Color c11 = new Color(imagenActual.getRGB(x, y));
+                Color c12 = new Color(imagenActual.getRGB(x + 1, y));
+                Color c21 = new Color(imagenActual.getRGB(x, y + 1));
+
+                sumaR = (c11.getRed() * 5) - c01.getRed() - c10.getRed() - c12.getRed() - c21.getRed();
+                sumaG = (c11.getGreen() * 5) - c01.getGreen() - c10.getGreen() - c12.getGreen() - c21.getGreen();
+                sumaB = (c11.getBlue() * 5) - c01.getBlue() - c10.getBlue() - c12.getBlue() - c21.getBlue();
+
+                int r = Math.min(255, Math.max(0, sumaR));
+                int g = Math.min(255, Math.max(0, sumaG));
+                int b = Math.min(255, Math.max(0, sumaB));
 
                 Color nuevoColor = new Color(r, g, b);
                 resultado.setRGB(x, y, nuevoColor.getRGB());
             }
         }
-
         imagenActual = resultado;
         actualizarPantalla();
     }
