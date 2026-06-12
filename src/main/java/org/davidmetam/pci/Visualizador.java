@@ -21,6 +21,7 @@ public class Visualizador extends JFrame {
     private JButton umbralButton;
     private JButton blurButton;
     private JButton sharpenButton;
+    private JButton erosionButton;
     private final Color colorDefecto = UIManager.getColor("Button.background");
 
     public Visualizador() {
@@ -82,12 +83,19 @@ public class Visualizador extends JFrame {
             setSharpen();
         });
 
+        erosionButton = new JButton("Erosión");
+        erosionButton.addActionListener(e -> {
+            setBackground(erosionButton);
+            setErosion();
+        });
+
         panelHerramientas.add(originalButton);
         panelHerramientas.add(escalaDeGrisesButton);
         panelHerramientas.add(negativeButton);
         panelHerramientas.add(umbralButton);
         panelHerramientas.add(blurButton);
         panelHerramientas.add(sharpenButton);
+        panelHerramientas.add(erosionButton);
         add(panelHerramientas, BorderLayout.EAST);
 
         JPanel panelInferior = new JPanel();
@@ -108,6 +116,7 @@ public class Visualizador extends JFrame {
         originalButton.setBackground(colorDefecto);
         blurButton.setBackground(colorDefecto);
         sharpenButton.setBackground(colorDefecto);
+        erosionButton.setBackground(colorDefecto);
         button.setBackground(new Color(50, 252, 82));
     }
 
@@ -269,6 +278,35 @@ public class Visualizador extends JFrame {
         }
 
         imagenActual = nueva;
+        actualizarPantalla();
+    }
+
+    private void setErosion() {
+        if (imagenActual == null) return;
+        int ancho = imagenActual.getWidth();
+        int alto = imagenActual.getHeight();
+        BufferedImage resultado = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
+
+        for (int x = 1; x < ancho - 1; x++) {
+            for (int y = 1; y < alto - 1; y++) {
+                int minGris = 255;
+                Color colorMinimo = Color.WHITE;
+
+                for (int i = -1; i <= 1; i++) {
+                    for (int j = -1; j <= 1; j++) {
+                        Color vecino = new Color(imagenActual.getRGB(x + i, y + j));
+                        int gris = (vecino.getRed() + vecino.getGreen() + vecino.getBlue()) / 3;
+
+                        if (gris < minGris) {
+                            minGris = gris;
+                            colorMinimo = vecino;
+                        }
+                    }
+                }
+                resultado.setRGB(x, y, colorMinimo.getRGB());
+            }
+        }
+        imagenActual = resultado;
         actualizarPantalla();
     }
 
