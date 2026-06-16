@@ -22,6 +22,7 @@ public class Visualizador extends JFrame {
     private JButton blurButton;
     private JButton sharpenButton;
     private JButton erosionButton;
+    private JButton harrisButton;
     private final Color colorDefecto = UIManager.getColor("Button.background");
 
     public Visualizador() {
@@ -89,6 +90,12 @@ public class Visualizador extends JFrame {
             setErosion();
         });
 
+        harrisButton = new JButton("Harris");
+        harrisButton.addActionListener(e -> {
+            setBackground(harrisButton);
+            setHarris();
+        });
+
         panelHerramientas.add(originalButton);
         panelHerramientas.add(escalaDeGrisesButton);
         panelHerramientas.add(negativeButton);
@@ -96,6 +103,7 @@ public class Visualizador extends JFrame {
         panelHerramientas.add(blurButton);
         panelHerramientas.add(sharpenButton);
         panelHerramientas.add(erosionButton);
+        panelHerramientas.add(harrisButton);
         add(panelHerramientas, BorderLayout.EAST);
 
         JPanel panelInferior = new JPanel();
@@ -107,8 +115,6 @@ public class Visualizador extends JFrame {
         setVisible(true);
     }
 
-
-
     public void setBackground(JButton button) {
         escalaDeGrisesButton.setBackground(colorDefecto);
         umbralButton.setBackground(colorDefecto);
@@ -117,9 +123,9 @@ public class Visualizador extends JFrame {
         blurButton.setBackground(colorDefecto);
         sharpenButton.setBackground(colorDefecto);
         erosionButton.setBackground(colorDefecto);
+        harrisButton.setBackground(colorDefecto);
         button.setBackground(new Color(50, 252, 82));
     }
-
 
     private void cargarImagenDesdeArchivo() {
         JFileChooser selector = new JFileChooser("C:\\Users\\david\\OneDrive\\Imágenes");
@@ -307,6 +313,120 @@ public class Visualizador extends JFrame {
             }
         }
         imagenActual = resultado;
+        actualizarPantalla();
+    }
+
+    private void setHarris() {
+        if (imagenOriginal == null) return;
+        int ancho = imagenOriginal.getWidth();
+        int alto = imagenOriginal.getHeight();
+
+        int[][] gris = new int[ancho][alto];
+        for (int x = 0; x < ancho; x++) {
+            for (int y = 0; y < alto; y++) {
+                Color p = new Color(imagenOriginal.getRGB(x, y));
+                gris[x][y] = (int) (0.299 * p.getRed() + 0.587 * p.getGreen() + 0.114 * p.getBlue());
+            }
+        }
+
+        double[][] ix = new double[ancho][alto];
+        double[][] iy = new double[ancho][alto];
+
+        for (int x = 1; x < ancho - 1; x++) {
+            for (int y = 1; y < alto - 1; y++) {
+                double hx = (gris[x + 1][y - 1] + 2 * gris[x + 1][y] + gris[x + 1][y + 1]) -
+                        (gris[x - 1][y - 1] + 2 * gris[x - 1][y] + gris[x - 1][y + 1]);
+                double hy = (gris[x - 1][y + 1] + 2 * gris[x][y + 1] + gris[x + 1][y + 1]) -
+                        (gris[x - 1][y - 1] + 2 * gris[x][y - 1] + gris[x + 1][y - 1]);
+                ix[x][y] = hx;
+                iy[x][y] = hy;
+            }
+        }
+
+        double[][] ix2 = new double[ancho][alto];
+        double[][] iy2 = new double[ancho][alto];
+        double[][] ixy = new double[ancho][alto];
+
+        for (int x = 0; x < ancho; x++) {
+            for (int y = 0; y < alto; y++) {
+                ix2[x][y] = ix[x][y] * ix[x][y];
+                iy2[x][y] = iy[x][y] * iy[x][y];
+                ixy[x][y] = ix[x][y] * iy[x][y];
+            }
+        }
+
+        double[][] sX2 = new double[ancho][alto];
+        double[][] sY2 = new double[ancho][alto];
+        double[][] sXY = new double[ancho][alto];
+
+        for (int x = 2; x < ancho - 2; x++) {
+            for (int y = 2; y < alto - 2; y++) {
+                double sumX2 = 0, sumY2 = 0, sumXY = 0;
+                for (int i = -2; i <= 2; i++) {
+                    for (int j = -2; j <= 2; j++) {
+                        sumX2 += ix2[x + i][y + j];
+                        sumY2 += iy2[x + i][y + j];
+                        sumXY += ixy[x + i][y + j];
+                    }
+                }
+                sX2[x][y] = sumX2;
+                sY2[x][y] = sumY2;
+                sXY[x][y] = sumXY;
+            }
+        }
+
+        double[][] harrisR = new double[ancho][alto];
+        double maxR = 0;
+        double k = 0.04;
+
+        for (int x = 2; x < ancho - 2; x++) {
+            for (int y = 2; y < alto - 2; y++) {
+                double a = sX2[x][y];
+                double b = sXY[x][y];
+                double c = sY2[x][y];
+
+                double det = (a * c) - (b * b);
+                double trace = a + c;
+                double r = det - k * (trace * trace);
+
+                if (r > 0) {
+                    harrisR[x][y] = r;
+                    if (r > maxR) {
+                        maxR = r;
+                    }
+                }
+            }
+        }
+
+        BufferedImage copia = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2d = copia.createGraphics();
+        g2d.drawImage(imagenOriginal, 0, 0, null);
+        g2d.setColor(Color.GREEN);
+
+        double umbral = maxR * 0.1;
+
+        for (int x = 2; x < ancho - 2; x++) {
+            for (int y = 2; y < alto - 2; y++) {
+                if (harrisR[x][y] > umbral) {
+                    boolean esMaxLocal = true;
+                    for (int i = -1; i <= 1; i++) {
+                        for (int j = -1; j <= 1; j++) {
+                            if (harrisR[x][y] < harrisR[x + i][y + j]) {
+                                esMaxLocal = false;
+                                break;
+                            }
+                        }
+                        if (!esMaxLocal) break;
+                    }
+                    if (esMaxLocal) {
+                        g2d.drawOval(x - 3, y - 3, 6, 6);
+                    }
+                }
+            }
+        }
+        g2d.dispose();
+
+        imagenActual = copia;
         actualizarPantalla();
     }
 
